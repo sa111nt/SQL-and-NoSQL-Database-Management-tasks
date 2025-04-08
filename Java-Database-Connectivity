@@ -1,4 +1,4 @@
-//zad1
+--zad1
 
 try (Statement stmt = conn.createStatement()) {
 
@@ -40,7 +40,7 @@ try (Statement stmt = conn.createStatement()) {
 
 
 
-//zad2
+--zad2
 
 try (Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
 
@@ -100,7 +100,7 @@ try (Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, Resu
 
 
 
-//zad3
+--zad3
 
 try (Statement stmt = conn.createStatement();) {
 
@@ -144,7 +144,7 @@ try (Statement stmt = conn.createStatement();) {
 
 
 
-//zad4
+--zad4
 
         try (Statement stmt = conn.createStatement();) {
 
@@ -238,7 +238,7 @@ try (Statement stmt = conn.createStatement();) {
 
 
 
-//zad5
+--zad5
 
         try (PreparedStatement stmt = conn.prepareStatement("insert into pracownicy(nazwisko, placa_pod, etat)" +
 
@@ -266,7 +266,7 @@ try (Statement stmt = conn.createStatement();) {
 
 
 
-//zad6
+--zad6
 
         try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO PRACOWNICY (NAZWISKO, PLACA_POD, ETAT) VALUES (?, ?, ?)")) {
 
@@ -322,7 +322,7 @@ try (Statement stmt = conn.createStatement();) {
 
 
 
-//zad7
+--zad7
 
 create or replace function zmien_wielkosc_liter (
 
