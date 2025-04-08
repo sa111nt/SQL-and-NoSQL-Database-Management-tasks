@@ -1,0 +1,487 @@
+Zadania
+
+
+
+--zad1
+
+
+
+create sequence Sekwencja
+
+start with 245
+
+increment by 10;
+
+
+
+
+
+create or replace procedure NowyPracownik
+
+    (nazwiskoPrac in varchar,
+
+     nazwaZesp in varchar,
+
+     nazwiskoSzef in varchar,
+
+     placaPod in number) is
+
+     p_idZesp number;
+
+     p_idSzef number;
+
+     p_idPrac number;
+
+begin
+
+        
+
+    select id_prac into p_idSzef
+
+    from pracownicy
+
+    where nazwisko = nazwiskoSzef;
+
+    
+
+    select id_zesp into p_idZesp
+
+    from zespoly
+
+    where nazwa = nazwaZesp;
+
+    
+
+    p_idPrac := sekwencja.NEXTVAL;
+
+    
+
+    insert into pracownicy(id_prac, nazwisko, id_zesp, id_szefa, zatrudniony, etat, placa_pod)
+
+    values (p_idPrac, nazwiskoPrac, p_idZesp, p_idSzef, sysdate, 'STAZYSTA', placaPod);
+
+    
+
+end NowyPracownik;
+
+
+
+
+
+declare
+
+    nazwiskoPrac varchar(9) default 'Godzinski';
+
+    nazwaZesp varchar(13) default 'ADMINISTRACJA';
+
+    nazwaSzef varchar(10) default 'BRZEZINSKI';
+
+    placaPod number default 250;
+
+begin
+
+    NowyPracownik(nazwiskoPrac, nazwaZesp, nazwaSzef, placaPod);
+
+end;
+
+
+
+
+
+--zad2
+
+create or replace function PlacaNetto 
+
+    (placaPod in number,
+
+     procent in number)
+
+     return number is
+
+begin
+
+    return (placaPod - placaPod * 35 / 100);
+
+end PlacaNetto;
+
+
+
+select nazwisko, placa_pod as BRUTTO,
+
+PlacaNetto(placa_pod, 35) as NETTO
+
+from Pracownicy where etat = 'PROFESOR' order by nazwisko;
+
+
+
+
+
+--zad3
+
+create or replace function Silnia
+
+    (N in number)
+
+    return number is
+
+    p_Count number default 1;
+
+begin
+
+    if N < 0 then 
+
+        return NULL;
+
+    elsif N = 0 then
+
+        return 1;
+
+    else
+
+        for i in 1..N loop
+
+            p_Count := p_Count * i;
+
+        end loop;
+
+    end if;
+
+
+
+    return p_Count;
+
+end Silnia;
+
+
+
+select Silnia(8) from Dual;
+
+
+
+
+
+--zad4
+
+create or replace function SilniaRek
+
+    (N in number)
+
+    return number is
+
+begin
+
+    if N < 0 then 
+
+        return NULL;
+
+    elsif N = 0 then
+
+        return 1;
+
+    else
+
+        return (N * SilniaRek(N-1));
+
+    end if;
+
+
+
+
+
+end SilniaRek;
+
+
+
+select SilniaRek(10) from Dual;
+
+
+
+
+
+--zad5
+
+create or replace function IleLat
+
+    (zatrudniony in DATE)
+
+    return number is
+
+begin
+
+    return (extract(year from SYSDATE) - extract(year from zatrudniony));
+
+end IleLat;
+
+
+
+SELECT nazwisko, zatrudniony, IleLat(zatrudniony) AS staz
+
+FROM Pracownicy WHERE placa_pod > 1000
+
+ORDER BY nazwisko;
+
+
+
+
+
+--zad6
+
+create or replace package Konwersja is
+
+    function Cels_To_Fahr (Cels number)
+
+        return number;
+
+    function Fahr_To_Cels (Fahr number)
+
+        return number;
+
+end Konwersja;
+
+
+
+create or replace package body Konwersja is
+
+    function Cels_To_Fahr (Cels number)
+
+        return number is
+
+    begin 
+
+        return (9/5 * Cels + 32);
+
+    end Cels_To_Fahr;
+
+
+
+    function Fahr_To_Cels (Fahr number)
+
+        return number is
+
+    begin 
+
+        return (5/9 * (Fahr - 32));
+
+    end Fahr_To_Cels;
+
+end Konwersja;
+
+
+
+
+
+
+
+--zad7
+
+create or replace package Zmienne is
+
+    vLicznik number default 0;
+
+    procedure ZwiekszLicznik;
+
+    procedure ZmniejszLicznik;
+
+    function PokazLicznik return number;
+
+end Zmienne;
+
+
+
+
+
+create or replace package body Zmienne is
+
+
+
+    
+
+    procedure ZwiekszLicznik is
+
+        begin
+
+        vLicznik := vLicznik + 1;
+
+        DBMS_OUTPUT.PUT_LINE('Zwiekszono');
+
+    end ZwiekszLicznik;
+
+
+
+    procedure ZmniejszLicznik is
+
+        begin
+
+            vLicznik := vLicznik - 1;
+
+            DBMS_OUTPUT.PUT_LINE('Zmniejszono');
+
+    end ZmniejszLicznik;
+
+
+
+    function PokazLicznik return number is
+
+        begin
+
+            return vLicznik;
+
+        end PokazLicznik;
+
+
+
+    begin   
+
+        vLicznik := 1;
+
+        DBMS_OUTPUT.PUT_LINE('Zainicjalizowano');
+
+end Zmienne;
+
+
+
+
+
+--zad8
+
+create or replace package IntZespoly is
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar);
+
+    procedure deleteZespolById (p_idZesp number);
+
+    procedure deleteZespolByName (p_nazwaZesp varchar);
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar);
+
+    function getIdZesp (p_nazwaZesp varchar) return number;
+
+    function getNameZesp (p_idZesp number) return varchar;
+
+    function getAdresZesp (p_idZesp number) return varchar;
+
+end IntZespoly;
+
+
+
+create or replace package body IntZespoly is 
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar) is
+
+    begin 
+
+        insert into zespoly (id_zesp, nazwa, adres)
+
+        values (p_idZesp, p_nazwaZesp, p_adresZesp);
+
+    end addZespol;
+
+
+
+    procedure deleteZespolById (p_idZesp number) is
+
+    begin 
+
+        delete from zespoly 
+
+        where id_zesp = p_idZesp;
+
+    end deleteZespolById;
+
+
+
+    procedure deleteZespolByName (p_nazwaZesp varchar) is
+
+    begin 
+
+        delete from zespoly 
+
+        where nazwa = p_nazwaZesp;
+
+    end deleteZespolByName;
+
+
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar) is
+
+    begin
+
+        update zespoly 
+
+        set nazwa = p_nazwasZespChanged,
+
+            adres = p_adresZespChanged
+
+        where id_zesp = p_idZesp;
+
+    end modifyZespol;
+
+
+
+    function getIdZesp (p_nazwaZesp varchar) return number is p_IdZespol number;
+
+    begin 
+
+        select id_zesp into p_IdZespol from zespoly where nazwa = p_nazwaZesp;
+
+        return p_IdZespol;
+
+    end getIdZesp;
+
+
+
+    function getNameZesp (p_idZesp number) return varchar is p_NameZespol varchar2(20);
+
+    begin 
+
+        select nazwa into p_NameZespol from zespoly where id_zesp = p_idZesp;
+
+        return p_NameZespol;
+
+    end getNameZesp;
+
+
+
+    function getAdresZesp (p_idZesp number) return varchar is p_AdresZespol varchar2(20);
+
+    begin 
+
+        select adres into p_AdresZespol from zespoly where id_zesp = p_Idzesp;
+
+        return p_AdresZespol;
+
+    end getAdresZesp;
+
+end IntZespoly;
+
+
+
+
+
+--zad9
+
+select object_name, status, object_type, text from user_objects natural join user_source
+
+where object_type in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 'PACKAGE BODY')
+
+order by object_name;
+
+
+
+
+
+--zad10
+
+drop function Silnia;
+
+drop function SilniaRek;
+
+drop function IleLat;
+
+
+
+
+
+--zad11
+
+drop package Konwersja;
