@@ -1,0 +1,233 @@
+zadanie2
+
+db.zespoly.insertMany([
+
+  {"id_zesp":10, "nazwa":"ADMINISTRACJA", "adres":"PIOTROWO 3A"},
+
+  {"id_zesp":20, "nazwa":"SYSTEMY ROZPROSZONE", "adres":"PIOTROWO 3A"},
+
+  {"id_zesp":30, "nazwa":"SYSTEMY EKSPERCKIE", "adres":"STRZELECKA 14"},
+
+  {"id_zesp":40, "nazwa":"ALGORYTMY", "adres":"WLODKOWICA 16"},
+
+  {"id_zesp":50, "nazwa":"BADANIA OPERACYJNE", "adres":"MIELZYNSKIEGO 30"}
+
+])
+
+
+
+zadanie3
+
+Pierwsze zapytanie zwraca tylko pole nazwisko, bez pola _id.
+
+Drugie zapytanie zwraca wszystkie inne pola oprócz _id i nazwisko
+
+
+
+zadanie4
+
+db.pracownicy.find(
+
+  {$or:{"etat": "ASYSTENT"},{"placa_pod": {$gt: 200, $lt: 500}}},
+
+  {"nazwisko": 1, "etat": 1, "placa_pod": 1}
+
+)
+
+
+
+zadanie5
+
+db.pracownicy.find(
+
+  {"placa_pod": {$gt: 400}},
+
+  {"etat": 1, "nazwisko": 1, "placa_pod": 1}
+
+).sort({"etat": 1, "placa_pod": -1})
+
+
+
+zadanie6
+
+db.pracownicy.find(
+
+  {"id_zesp": 20},
+
+  {"nazwisko": 1, "placa_pod": 1}
+
+).sort({"placa_pod": -1}).skip(1).limit(1)
+
+
+
+zadanie7
+
+db.pracownicy.find(
+
+  {"id_zesp": {$in: [20, 30]}, "etat": {$ne: "ASYSTENT"}, "nazwisko": {$regex: "I$"}},
+
+  {"nazwisko": 1, "etat": 1}
+
+)
+
+
+
+zadanie8
+
+db.pracownicy.aggregate([
+
+  {$project: {
+
+    "stanowisko": "$etat",
+
+    "nazwisko": 1,
+
+    "rok_zatrudnienia": {$year: "$zatrudniony"},
+
+    "total_salary": {$add: ["$placa_pod", {$ifNull: ["$placa_dod", 0]}}
+
+  }},
+
+  {$sort: {"total_salary": -1}},
+
+  {$skip: 2},
+
+  {$limit: 1},
+
+  {$project: {
+
+    "stanowisko": 1,
+
+    "nazwisko": 1,
+
+    "rok_zatrudnienia": 1
+
+  }}
+
+])
+
+
+
+zadanie9
+
+db.pracownicy.aggregate([
+
+  {$group: {_id: "$id_zesp", liczba: {$sum: 1}}},
+
+  {$match: {liczba: {$gt: 3}}}
+
+])
+
+
+
+zadanie10
+
+db.pracownicy.aggregate([
+
+  { $lookup: { from: "zespoly", localField: "id_zesp", foreignField: "id_zesp", as: "zespol_pracownika"}},
+
+  {$match:{"id_zesp": {$in: [20, 30]}}},
+
+  {$project:{"nazwisko": 1, "dept": {$arrayElemAt: ["$zespol_pracownika.dept", 0]}}})
+
+
+
+zadanie11
+
+db.pracownicy.aggregate([
+
+  {$lookup:{from: "zespoly", localField: "id_zesp", foreignField: "id_zesp", as: "zespol_pracownika"}},
+
+  {$match:{"zespol_pracownika.dept": /Strzelecka/}},
+
+  {$project:{"nazwisko": 1, "zespol": {$arrayElemAt: ["$zespol_pracownika.nazwa", 0]}}})
+
+
+
+zadanie12
+
+db.pracownicy.aggregate([
+
+  {$lookup: {from: "zespoly", localField: "id_zesp", foreignField: "id_zesp", as: "zespol_pracownika"}},
+
+  {$group: {_id: {$arrayElemAt: ["$zespol_pracownika.nazwa", 0]}, liczba: {$sum: 1}}})
+
+
+
+zadanie13
+
+var pracownicy = db.pracownicy.find();
+
+while (pracownicy.hasNext()) {
+
+    prac = pracownicy.next();
+
+    zesp = db.zespoly.findOne({"id_zesp": prac.id_zesp});
+
+    
+
+    db.pracownicy.update(
+
+        { "_id": prac._id },
+
+        { $set: { "id_zesp": zesp._id } }
+
+    );
+
+}
+
+
+
+zadanie14
+
+db.produkty.find(
+
+    {"oceny.osoba": {"$nin": ["Ania", "Karol"]}},
+
+    {_id: 0, nazwa: 1}
+
+)
+
+
+
+zadanie15
+
+db.produkty.aggregate([
+
+    {$unwind: "$oceny"},
+
+    {$group: {_id: "$nazwa", srednia_ocena: {$avg: "$oceny.ocena"}}},
+
+    {$sort: {srednia_ocena: -1}},
+
+    {$limit: 1},
+
+    {$project: {produkt: "$_id", srednia_ocena: 1,_id: 0}}
+
+])
+
+
+
+zadanie16
+
+db.produkty.update(
+
+    {"nazwa": "Kosiarka elektryczna"},
+
+    {$push: {"oceny": {osoba: "Ania", ocena: 4}}}
+
+)
+
+
+
+zadanie17
+
+db.produkty.update(
+
+    {},
+
+    {$pull: {"oceny": {"ocena": {$lte: 3}}}},
+
+    {multi: true}
+
+)
