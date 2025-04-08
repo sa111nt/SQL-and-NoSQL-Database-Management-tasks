@@ -1,0 +1,239 @@
+--zad1
+
+DECLARE
+
+  vLiczba number(7,3) := 1000.456;
+
+  vTekst varchar(100) := 'Witaj, świecie!';
+
+BEGIN
+
+  DBMS_OUTPUT.PUT_LINE('Zmienna vTekst:' || vTekst);
+
+  DBMS_OUTPUT.PUT_LINE('Zmienna vLiczba:' || vLiczba);
+
+END;
+
+
+
+
+
+--zad2
+
+DECLARE
+
+  vLiczba number(19,3) := 1000.456;
+
+  vTekst varchar(100) := 'Witaj, świecie!';
+
+BEGIN
+
+  vTekst := vTekst || 'Witaj, nowy dniu!';
+
+  vLiczba := vLiczba + power(10,15);
+
+  DBMS_OUTPUT.PUT_LINE('Zmienna vTekst:' || vTekst);
+
+  DBMS_OUTPUT.PUT_LINE('Zmienna vLiczba:' || vLiczba);
+
+END;
+
+  
+
+
+
+--zad3
+
+DECLARE
+
+  wZmienna1 NUMBER(9,7) := 10.235600;
+
+  wZmienna2 NUMBER(8,7) := 0.000001;
+
+BEGIN
+
+  DBMS_OUTPUT.PUT_LINE('Wynik dodawania ' || TO_CHAR(wZmienna1) || ' i ' || TO_CHAR(wZmienna2) || ': ' || TO_CHAR(wZmienna1 + wZmienna2));
+
+END;
+
+
+
+
+
+--zad4
+
+DECLARE
+
+  vPromien NUMBER(1,0) := 5; 
+
+  PI CONSTANT NUMBER(3,2) := 3.14;
+
+BEGIN
+
+  DBMS_OUTPUT.PUT_LINE('Obwód koła o promieniu równym ' || vPromien || ': ' || (vPromien * 2 * PI));
+
+  DBMS_OUTPUT.PUT_LINE('Pole koła o promieniu równym ' || vPromien || ': ' || (PI * power(vPromien,2)));
+
+END;
+
+
+
+
+
+--zad5
+
+DECLARE
+
+  vNazwisko Pracownicy.nazwisko%TYPE;
+
+  vEtat Pracownicy.etat%TYPE;
+
+BEGIN
+
+  select nazwisko, etat into vNazwisko, vEtat 
+
+  from PRACOWNICY 
+
+  where placa_pod = (select max(placa_pod) from pracownicy);
+
+  DBMS_OUTPUT.PUT_LINE('Najlepiej zarabia pracownik ' || vNazwisko);
+
+  DBMS_OUTPUT.PUT_LINE('Pracuje on jako ' || vEtat);
+
+END;
+
+
+
+
+
+--zad6
+
+DECLARE
+
+  vPracownik Pracownicy%ROWTYPE;
+
+BEGIN
+
+  select * into vPracownik 
+
+  from PRACOWNICY 
+
+  where placa_pod = (select max(placa_pod) from pracownicy);
+
+  DBMS_OUTPUT.PUT_LINE('Najlepiej zarabia pracownik ' || vPracownik.nazwisko);
+
+  DBMS_OUTPUT.PUT_LINE('Pracuje on jako ' || vPracownik.etat);
+
+END;
+
+
+
+
+
+--zad7
+
+DECLARE
+
+  SUBTYPE tPieniadze is NUMBER(5,0);
+
+  vRoczneZarobki tPieniadze;
+
+BEGIN
+
+  select 12 * placa_pod into vRoczneZarobki 
+
+  from pracownicy 
+
+  where nazwisko = 'SLOWINSKI';
+
+  DBMS_OUTPUT.PUT_LINE('Pracownik SLOWINSKI zarabia rocznie: ' || vRoczneZarobki);
+
+END;
+
+
+
+
+
+--zad8
+
+DECLARE
+
+  vCurrentSecond NUMBER;
+
+BEGIN
+
+  LOOP
+
+    vCurrentSecond := TO_CHAR(SYSDATE, 'SS');
+
+    IF vCurrentSecond = '25' THEN
+
+      DBMS_OUTPUT.PUT_LINE('Nadeszła 25 sekunda!');
+
+      EXIT;
+
+    END IF;
+
+  END LOOP;
+
+END;
+
+
+
+
+
+--zad9
+
+DECLARE
+
+  vZmiennaN NUMBER(2,0) := 10;
+
+  vMul NUMBER := 1;
+
+BEGIN
+
+  FOR indeks IN 1..vZmiennaN LOOP
+
+    vMul := vMul * indeks;
+
+  END LOOP;
+
+  DBMS_OUTPUT.PUT_LINE('Silnia dla n=' || vZmiennaN || ':' ||  vMul);
+
+END;
+
+    
+
+    
+
+
+
+--zad10
+
+DECLARE
+
+  vData DATE;
+
+  vRok NUMBER;
+
+  vMiesiac NUMBER;
+
+BEGIN
+
+  FOR vRok IN 2001..2100 LOOP
+
+    FOR vMiesiac IN 1..12 LOOP
+
+      vData := TO_DATE(vRok || '-' || vMiesiac || '-13', 'YYYY-MM-DD');
+
+      IF TO_CHAR(vData, 'D') = '6' THEN 
+
+        DBMS_OUTPUT.PUT_LINE(TO_CHAR(vData, 'DD-MM-YYYY'));
+
+      END IF;
+
+    END LOOP;
+
+  END LOOP;
+
+END;
