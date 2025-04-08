@@ -1,0 +1,389 @@
+//zad1
+
+try (Statement stmt = conn.createStatement()) {
+
+
+
+    try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM pracownicy")) {
+
+        if (rs.next()) {
+
+            System.out.println("Zatrudniono " + rs.getInt(1) + " pracowników, w tym:\n");
+
+        }
+
+    }
+
+
+
+    try (ResultSet rs = stmt.executeQuery(
+
+            "select count(*), nazwa from pracownicy natural join zespoly group by nazwa");) {
+
+        while (rs.next()) {
+
+            System.out.println(rs.getInt("1") + " w zespole " + rs.getString(2) + ",\n");
+
+        }
+
+    }
+
+
+
+} catch (SQLException ex) {
+
+    System.out.println("Błąd wykonania polecenia: " + ex.getMessage());
+
+
+
+
+
+
+
+//zad2
+
+try (Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+
+
+
+    try (ResultSet rs = stmt.executeQuery("select nazwisko " +
+
+            "from pracownicy where etat = 'ASYSTENT' order by placa_pod desc")) {
+
+        if(rs.last()) {
+
+            rs.last();
+
+            System.out.println(rs.getString(1) + " - najmniej zarabiający pracownik\n");
+
+        }
+
+        if(rs.absolute(3)) {
+
+            rs.absolute(3);
+
+            System.out.println(rs.getString(1) + " - trzeci najmniej zarabiający pracownik\n");
+
+        }
+
+        if(rs.last()) {
+
+            rs.last();
+
+            if(rs.previous()) {
+
+                rs.previous();
+
+                System.out.println(rs.getString(1) + " - przedostatni najmniej zarabiający pracownik\n");
+
+            }
+
+        }
+
+    } catch (SQLException ex) {
+
+        System.out.println("Błąd wykonania zapytania: "+ ex.getMessage());
+
+    }
+
+
+
+} catch (SQLException ex) {
+
+    System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+}
+
+
+
+
+
+
+
+//zad3
+
+try (Statement stmt = conn.createStatement();) {
+
+    stmt.executeUpdate("CREATE SEQUENCE PR_SEQ START WITH 1 INCREMENT BY 1");
+
+
+
+    for (int id : zwolnienia) {
+
+        String deleteQuery = "DELETE FROM PRACOWNICY WHERE ID_PRAC = " + id;
+
+        stmt.executeUpdate(deleteQuery);
+
+        System.out.println("pracownik o identyfikatorze " + id + " został zwolniony");
+
+    }
+
+
+
+    for (String nazwisko : zatrudnienia) {
+
+        String insertQuery = "INSERT INTO PRACOWNICY (ID_PRAC, NAZWISKO, ETAT, ZATRUDNIONY, PLACA_POD, PLACA_DOD, ID_ZESP) " +
+
+                "VALUES (PR_SEQ.NEXTVAL, '" + nazwisko + "', 'ASYSTENT', SYSDATE, 400.00, 50.00, 10)";
+
+        stmt.executeUpdate(insertQuery);
+
+            System.out.println("pracownik " + nazwisko + " został zatrudniony");
+
+    }
+
+
+
+} catch (SQLException ex) {
+
+    System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+}
+
+
+
+
+
+//zad4
+
+        try (Statement stmt = conn.createStatement();) {
+
+            conn.setAutoCommit(false);
+
+
+
+            try(ResultSet rs = stmt.executeQuery("select etat from pracownicy")) {
+
+                while(rs.next()) {
+
+                    System.out.println(rs.getString(1));
+
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println("Błąd wykonania polecenia: " + ex.getMessage());
+
+            }
+
+
+
+            stmt.executeUpdate("INSERT INTO ETATY VALUES ('ADIUNKT',510.00, 750.00)");
+
+
+
+            try(ResultSet rs = stmt.executeQuery("select etat from pracownicy")) {
+
+                while(rs.next()) {
+
+                    System.out.println(rs.getString(1));
+
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println("Błąd wykonania polecenia: " + ex.getMessage());
+
+            }
+
+            
+
+            conn.rollback();
+
+
+
+            try(ResultSet rs = stmt.executeQuery("select etat from pracownicy")) {
+
+                while(rs.next()) {
+
+                    System.out.println(rs.getString(1));
+
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println("Błąd wykonania polecenia: " + ex.getMessage());
+
+            }
+
+
+
+            stmt.executeUpdate("INSERT INTO ETATY VALUES ('ADIUNKT',510.00, 750.00)");
+
+            conn.commit();
+
+            try(ResultSet rs = stmt.executeQuery("select etat from pracownicy")) {
+
+                while(rs.next()) {
+
+                    System.out.println(rs.getString(1));
+
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println("Błąd wykonania polecenia: " + ex.getMessage());
+
+            }
+
+
+
+        } catch (SQLException ex) {
+
+            System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+        }
+
+
+
+
+
+//zad5
+
+        try (PreparedStatement stmt = conn.prepareStatement("insert into pracownicy(nazwisko, placa_pod, etat)" +
+
+                "values (?, ?, ?)");) {
+
+            for (int i = 0; i < 3; i++) {
+
+                stmt.setString(1,nazwiska[i]);
+
+                stmt.setInt(2,place[i]);
+
+                stmt.setString(3, etaty[i]);
+
+                stmt.executeUpdate();
+
+            }
+
+        } catch (SQLException ex) {
+
+            System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+        }
+
+
+
+
+
+//zad6
+
+        try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO PRACOWNICY (NAZWISKO, PLACA_POD, ETAT) VALUES (?, ?, ?)")) {
+
+
+
+            long start = System.nanoTime();
+
+            for (int i = 0; i < 2000; i++) {
+
+                stmt.setString(1, nazwiska[i]);
+
+                stmt.setInt(2, place[i]);
+
+                stmt.setString(3, etaty[i]);
+
+                stmt.executeUpdate();
+
+            }
+
+            long czas1 = System.nanoTime() - start; 
+
+            System.out.println("Czas wstawiania sekwencyjnie: " + czas1 + " nanosekund.");
+
+
+
+            start = System.nanoTime();
+
+            for (int i = 0; i < 2000; i++) {
+
+                stmt.setString(1, nazwiska[i]);
+
+                stmt.setInt(2, place[i]);
+
+                stmt.setString(3, etaty[i]);
+
+                stmt.addBatch();  
+
+            }
+
+            stmt.executeBatch(); 
+
+            long czas2 = System.nanoTime() - start;  
+
+            System.out.println("Czas wstawiania wsadowego: " + czas2 + " nanosekund.");
+
+        } catch (SQLException ex) {
+
+            System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+        }
+
+
+
+
+
+//zad7
+
+create or replace function zmien_wielkosc_liter (
+
+    p_idPrac in number,
+
+    p_nazwisko out varchar2
+
+) return number is 
+
+    v_nazwisko varchar2(50);
+
+begin 
+
+    select nazwisko into v_nazwisko from pracownicy 
+
+    where id_prac = p_idPrac;
+
+    if v_nazwisko is null THEN
+
+        return 0;
+
+    else
+
+        v_nazwisko := INITCAP(v_nazwisko);
+
+        update pracownicy 
+
+        set nazwisko = v_nazwisko 
+
+        where id_prac = p_idPrac;
+
+        p_nazwisko := v_nazwisko;
+
+        return 1;
+
+    end if;
+
+end zmien_wielkosc_liter;
+
+
+
+        try (CallableStatement stmt = conn.prepareCall("{? = call zmien_wielkosc_liter(?,?)}")) {
+
+            stmt.setInt(2, 100);
+
+            stmt.setString(3, "");
+
+            stmt.registerOutParameter(1, Types.INTEGER);
+
+            stmt.execute();
+
+            int result = stmt.getInt(1);
+
+            System.out.println(result);
+
+            System.out.println(stmt.getString(3));
+
+
+
+        } catch (SQLException ex) {
+
+            System.out.println("Błąd połączenia do bazy danych: " + ex.getMessage());
+
+        }
