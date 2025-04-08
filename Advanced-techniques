@@ -1,0 +1,701 @@
+
+--zad1
+
+declare
+
+    cursor Asystenci is
+
+        select *
+
+        from pracownicy
+
+        where etat = 'ASYSTENT'
+
+        order by nazwisko;
+
+    vAsystent Pracownicy%ROWTYPE;
+
+begin
+
+    open Asystenci;
+
+    loop    
+
+        fetch Asystenci into vAsystent;
+
+        exit when Asystenci%NOTFOUND;
+
+        DBMS_OUTPUT.PUT_LINE(vAsystent.nazwisko || ' pracuje od ' || to_char(vAsystent.zatrudniony,'DD-MM-YYYY'));
+
+        end loop;
+
+    close Asystenci;
+
+end;
+
+    
+
+
+
+
+
+
+
+--zad2
+
+declare
+
+    cursor bogaci is
+
+        select nazwisko from pracownicy
+
+        order by placa_pod desc
+
+        fetch first 3 rows only;
+
+begin
+
+    for vPracownik in bogaci loop  
+
+        DBMS_OUTPUT.PUT_LINE(bogaci%rowcount || ' : ' || vPracownik.nazwisko);
+
+    end loop;
+
+end;
+
+
+
+
+
+
+
+
+
+--zad3
+
+declare 
+
+    cursor zwiekszenie is
+
+        select nazwisko, placa_pod from pracownicy 
+
+        where to_char(zatrudniony, 'D') = 1
+
+        order by nazwisko 
+
+        for update;
+
+begin 
+
+    for vPracownik in zwiekszenie loop
+
+        update pracownicy 
+
+        set placa_pod = placa_pod * 1.2
+
+        where current of zwiekszenie;
+
+    end loop;
+
+end;
+
+
+
+
+
+
+
+
+
+--zad4
+
+declare 
+
+    cursor cPracownicy is 
+
+        select * from pracownicy natural join zespoly
+
+        order by nazwisko 
+
+        for update of nazwisko;
+
+begin 
+
+    for vPracownik in cPracownicy loop  
+
+        if vPracownik.nazwa = 'ALGORYTMY' then
+
+            update pracownicy 
+
+            set placa_dod = placa_dod + 100
+
+            where current of cPracownicy;
+
+        elsif vPracownik.nazwa = 'ADMINISTRACJA' then
+
+            update pracownicy 
+
+            set placa_dod = placa_dod + 150
+
+            where current of cPracownicy;
+
+        else
+
+            if vPracownik.etat = 'STAZYSTA' then  
+
+                delete from pracownicy 
+
+                where current of cPracownicy;
+
+            end if;
+
+        end if;
+
+    end loop;
+
+end;
+
+
+
+
+
+
+
+
+
+--zad5
+
+create or replace procedure PokazPracownikowEtatu (pEtat in varchar) is
+
+    cursor cEtatPrac is 
+
+        select nazwisko from pracownicy 
+
+        where etat = pEtat order by nazwisko;
+
+begin
+
+    for vPracownik in cEtatPrac loop 
+
+        DBMS_OUTPUT.PUT_LINE(vPracownik.nazwisko);
+
+    end loop;
+
+end;
+
+
+
+exec POKAZPRACOWNIKOWETATU('PROFESOR');
+
+
+
+
+
+
+
+
+
+--zad6
+
+create or replace procedure RaportKadrowy is 
+
+    cursor cEtaty is
+
+        select unique etat from pracownicy;
+
+    cursor cPracownicy (pEtat varchar) is
+
+        select nazwisko, (placa_pod + coalesce(placa_dod, 0)) as Pensja from pracownicy
+
+        where etat = pEtat;
+
+    vLiczbaPracownikow number default 0;
+
+    vSredniaPensja number default 0;
+
+begin 
+
+    for vEtat in cEtaty loop 
+
+        DBMS_OUTPUT.PUT_LINE('Etat: ' || vEtat.etat);
+
+        DBMS_OUTPUT.PUT_LINE('------------------------------');
+
+
+
+        for vPracownik in cPracownicy(vEtat.etat) loop 
+
+            DBMS_OUTPUT.PUT_LINE(cPracownicy%ROWCOUNT || '. '|| vPracownik.nazwisko || ', pensja: ' || vPracownik.pensja);
+
+            vLiczbaPracownikow := vLiczbaPracownikow + 1;
+
+            vSredniaPensja := vSredniaPensja + vPracownik.pensja;
+
+        end loop;
+
+
+
+        if vLiczbaPracownikow = 0 then 
+
+            DBMS_OUTPUT.PUT_LINE('brak');
+
+        else
+
+            vSredniaPensja := vSredniaPensja / vLiczbaPracownikow;
+
+            DBMS_OUTPUT.PUT_LINE('Liczba pracowników: ' || vLiczbaPracownikow);
+
+            DBMS_OUTPUT.PUT_LINE('Średnia pensja: ' || vSredniaPensja);
+
+        end if;
+
+
+
+        vSredniaPensja := 0;
+
+        vLiczbaPracownikow := 0;
+
+        DBMS_OUTPUT.PUT_LINE('');
+
+    end loop;
+
+end RaportKadrowy;
+
+
+
+
+
+
+
+
+
+--zad7
+
+create or replace package IntZespoly is
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar);
+
+    procedure deleteZespolById (p_idZesp number);
+
+    procedure deleteZespolByName (p_nazwaZesp varchar);
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar);
+
+    function getIdZesp (p_nazwaZesp varchar) return number;
+
+    function getNameZesp (p_idZesp number) return varchar;
+
+    function getAdresZesp (p_idZesp number) return varchar;
+
+end IntZespoly;
+
+
+
+
+
+create or replace package body IntZespoly is 
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar) is
+
+    begin 
+
+        insert into zespoly (id_zesp, nazwa, adres)
+
+        values (p_idZesp, p_nazwaZesp, p_adresZesp);
+
+
+
+        if SQL%found then 
+
+            DBMS_OUTPUT.PUT_LINE('Dodanych rekordów: ' || SQL%ROWCOUNT);
+
+        else
+
+            DBMS_OUTPUT.PUT_LINE('Nie wstawiano żadnego rekordu!');
+
+        end if;
+
+    end addZespol;
+
+
+
+
+
+    procedure deleteZespolById (p_idZesp number) is
+
+    begin 
+
+        delete from zespoly 
+
+        where id_zesp = p_idZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba usuniętych rekordów: ' || SQL%ROWCOUNT);
+
+    end deleteZespolById;
+
+
+
+
+
+    procedure deleteZespolByName (p_nazwaZesp varchar) is
+
+    begin 
+
+        delete from zespoly 
+
+        where nazwa = p_nazwaZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba usuniętych rekordów: ' || SQL%ROWCOUNT);
+
+    end deleteZespolByName;
+
+
+
+
+
+
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar) is
+
+    begin
+
+        update zespoly 
+
+        set nazwa = p_nazwasZespChanged,
+
+            adres = p_adresZespChanged
+
+        where id_zesp = p_idZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba zmienionych rekordów: ' || SQL%ROWCOUNT);
+
+    end modifyZespol;
+
+
+
+
+
+
+
+    function getIdZesp (p_nazwaZesp varchar) return number is p_IdZespol number;
+
+    begin 
+
+        select id_zesp into p_IdZespol from zespoly where nazwa = p_nazwaZesp;
+
+        return p_IdZespol;
+
+    end getIdZesp;
+
+
+
+
+
+
+
+    function getNameZesp (p_idZesp number) return varchar is p_NameZespol varchar2(20);
+
+    begin 
+
+        select nazwa into p_NameZespol from zespoly where id_zesp = p_idZesp;
+
+        return p_NameZespol;
+
+    end getNameZesp;
+
+
+
+
+
+
+
+    function getAdresZesp (p_idZesp number) return varchar is p_AdresZespol varchar2(20);
+
+    begin 
+
+        select adres into p_AdresZespol from zespoly where id_zesp = p_Idzesp;
+
+        return p_AdresZespol;
+
+    end getAdresZesp;
+
+end IntZespoly;
+
+
+
+
+
+
+
+
+
+--zad8
+
+create or replace package IntZespoly is
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar);
+
+    procedure deleteZespolById (p_idZesp number);
+
+    procedure deleteZespolByName (p_nazwaZesp varchar);
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar);
+
+    function getIdZesp (p_nazwaZesp varchar) return number;
+
+    function getNameZesp (p_idZesp number) return varchar;
+
+    function getAdresZesp (p_idZesp number) return varchar;
+
+
+
+    exNiepoprawnaNazwaZespolu EXCEPTION;
+
+    exNiepoprawnyIdZespolu EXCEPTION;
+
+    exDuplicateIdZespolu EXCEPTION;
+
+
+
+end IntZespoly;
+
+
+
+
+
+create or replace package body IntZespoly is 
+
+    procedure addZespol (p_idZesp number, p_nazwaZesp varchar, p_adresZesp varchar) is
+
+        pExeption number;
+
+    begin 
+
+
+
+        select count(*) into pExeption from zespoly where id_zesp = p_idZesp;
+
+        if pExeption > 0 then
+
+            raise exDuplicateIdZespolu;
+
+        end if;
+
+
+
+        insert into zespoly (id_zesp, nazwa, adres)
+
+        values (p_idZesp, p_nazwaZesp, p_adresZesp);
+
+
+
+        if SQL%found then 
+
+            DBMS_OUTPUT.PUT_LINE('Dodanych rekordów: ' || SQL%ROWCOUNT);
+
+        else
+
+            DBMS_OUTPUT.PUT_LINE('Nie wstawiano żadnego rekordu!');
+
+        end if;
+
+    
+
+    exception
+
+        when exDuplicateIdZespolu then
+
+            DBMS_OUTPUT.PUT_LINE('Podany identyfikator zespołu już istnieje');
+
+    end addZespol;
+
+
+
+
+
+
+
+    procedure deleteZespolById (p_idZesp number) is
+
+        pExeption number;
+
+    begin 
+
+        select count(*) into pExeption from zespoly where id_zesp = p_idZesp;
+
+        if pExeption = 0 then
+
+            raise exNiepoprawnyIdZespolu;
+
+        end if;
+
+
+
+        delete from zespoly 
+
+        where id_zesp = p_idZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba usuniętych rekordów: ' || SQL%ROWCOUNT);
+
+
+
+    exception 
+
+        when exNiepoprawnyIdZespolu then
+
+            DBMS_OUTPUT.PUT_LINE('Zespół o podanym identyfikatorze nie istnieje');
+
+    end deleteZespolById;
+
+
+
+
+
+    procedure deleteZespolByName (p_nazwaZesp varchar) is
+
+        pExeption number;
+
+    begin 
+
+  
+
+        select count(*) into pExeption from zespoly where nazwa = p_nazwaZesp;
+
+        if pExeption = 0 then
+
+            raise exNiepoprawnaNazwaZespolu;
+
+        end if;
+
+
+
+        delete from zespoly 
+
+        where nazwa = p_nazwaZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba usuniętych rekordów: ' || SQL%ROWCOUNT);
+
+
+
+    exception 
+
+        when exNiepoprawnaNazwaZespolu then
+
+            DBMS_OUTPUT.PUT_LINE('Zespół o podanej nazwie nie istnieje');
+
+    end deleteZespolByName;
+
+
+
+
+
+
+
+    procedure modifyZespol (p_idZesp number, p_nazwasZespChanged varchar, p_adresZespChanged varchar) is
+
+        pExeption number;
+
+    begin
+
+       
+
+        select count(*) into pExeption from zespoly where id_zesp = p_idZesp;
+
+        if pExeption = 0 then
+
+            raise exNiepoprawnyIdZespolu;
+
+        end if;
+
+
+
+        update zespoly 
+
+        set nazwa = p_nazwasZespChanged,
+
+            adres = p_adresZespChanged
+
+        where id_zesp = p_idZesp;
+
+
+
+        DBMS_OUTPUT.PUT_LINE('Liczba zmienionych rekordów: ' || SQL%ROWCOUNT);
+
+
+
+    exception 
+
+        when exNiepoprawnyIdZespolu then
+
+            DBMS_OUTPUT.PUT_LINE('Zespół o podanym identyfikatorze nie istnieje');    
+
+    end modifyZespol;
+
+
+
+    function getIdZesp (p_nazwaZesp varchar) return number is p_IdZespol number;
+
+    begin 
+
+        select id_zesp into p_IdZespol from zespoly where nazwa = p_nazwaZesp;
+
+        return p_IdZespol;
+
+    exception 
+
+        when NO_DATA_FOUND then 
+
+            raise exNiepoprawnaNazwaZespolu;
+
+    end getIdZesp;
+
+
+
+    function getNameZesp (p_idZesp number) return varchar is p_NameZespol varchar2(20);
+
+    begin 
+
+        select nazwa into p_NameZespol from zespoly where id_zesp = p_idZesp;
+
+        return p_NameZespol;
+
+    exception 
+
+        when NO_DATA_FOUND then 
+
+            raise exNiepoprawnyIdZespolu;
+
+    end getNameZesp;
+
+
+
+    function getAdresZesp (p_idZesp number) return varchar is p_AdresZespol varchar2(20);
+
+    begin 
+
+        select adres into p_AdresZespol from zespoly where id_zesp = p_Idzesp;
+
+        return p_AdresZespol;
+
+    exception 
+
+        when NO_DATA_FOUND then 
+
+            raise exNiepoprawnyIdZespolu;
+
+    end getAdresZesp;
+
+
+
+end IntZespoly;
+
